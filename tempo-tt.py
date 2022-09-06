@@ -51,6 +51,9 @@ def create_tt_records(sxm_tempo_records : List):
         tt_record['hours'] = record['timeSpentSeconds']/3600
         tt_record['comments'] = record['issue']['key']
         date = tt_record['date'].split(' ')[0]
+        if record['issue']['key'] == 'PTM-3': #Holiday
+            print(f"Skipping { tt_record['hours'] }h on { date }. Motive: Holiday (PTM-3).")
+            continue
         response = requests.put(TT_API_UPSERT, headers=TT_HEADERS, data=json.dumps(tt_record))
         if response.status_code == HTTPStatus.OK:
             print(f"{date} - {tt_record['hours']}hrs record for ticket "
