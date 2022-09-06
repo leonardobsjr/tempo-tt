@@ -41,6 +41,7 @@ def get_tempo_records() -> Dict:
         print('Check password!')
     elif response.status_code == HTTPStatus.OK:
         tempo_entries = response.json()
+    print(f'Number of tempo records found: {len(tempo_entries)}')
     return tempo_entries
 
 def create_tt_records(sxm_tempo_records : List):
@@ -59,9 +60,6 @@ def create_tt_records(sxm_tempo_records : List):
             print(f"{date} - {tt_record['hours']}hrs record for ticket "
                   f"{tt_record['comments']} created successfully.")
         else:
-            print(f"{date} - Issue addind record for ticket { tt_record['comments'] }")
-            print(response.status_code)
-            print(response.content)
-
-tempo_records = get_tempo_records()
-create_tt_records(tempo_records)
+            print(f"{date} - Issue adding record for ticket { tt_record['comments'] }:")
+            print(f'Response code: {response.status_code}')
+            print(f'Response content: {response.content}')
