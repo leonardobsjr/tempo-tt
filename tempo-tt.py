@@ -63,3 +63,6 @@ def create_tt_records(sxm_tempo_records : List):
             print(f"{date} - Issue adding record for ticket { tt_record['comments'] }:")
             print(f'Response code: {response.status_code}')
             print(f'Response content: {response.content}')
+
+tempo_records = get_tempo_records()
+create_tt_records(tempo_records)
