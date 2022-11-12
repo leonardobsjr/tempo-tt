@@ -24,6 +24,15 @@ TT_DATA_TEMPLATE = {
     "comments": "123123",
     "employeeId": None
 }
+TT_HOLIDAY_TEMPLATE = {
+   "projectId":1251,
+   "date":"2022-11-02T00:00:00.000Z",
+   "hours":8,
+   "focalPointId":14651, #Jose Lopez
+   "descriptionId":749, #Holiday
+   "recordTypeId":1,
+   "employeeId": None
+}
 
 USER_AGENT = UserAgent().random
 TT_HEADERS = {
@@ -36,9 +45,10 @@ def get_tempo_records() -> Dict:
     """ Get records from SXM Tempo """
     tempo_query = {"from": TEMPO_STARTING_DATE, "to": TEMPO_END_DATE, "worker": [TEMPO_USER]}
     print(tempo_query)
-    response = requests.post(TEMPO_API, auth=(TEMPO_LOGIN, TEMPO_PASSWORD), json=tempo_query)
+    response = requests.post(TEMPO_API, auth=(TEMPO_LOGIN, TEMPO_PASSWORD),
+        json=tempo_query, timeout=60)
     if response.status_code == HTTPStatus.UNAUTHORIZED:
-        print('Check password!')
+        print('Check Tempo password!')
     elif response.status_code == HTTPStatus.OK:
         tempo_entries = response.json()
     print(f'Number of tempo records found: {len(tempo_entries)}')
@@ -53,9 +63,14 @@ def create_tt_records(sxm_tempo_records : List):
         tt_record['comments'] = record['issue']['key']
         date = tt_record['date'].split(' ')[0]
         if record['issue']['key'] == 'PTM-3': #Holiday
-            print(f"Skipping { tt_record['hours'] }h on { date }. Motive: Holiday (PTM-3).")
-            continue
-        response = requests.put(TT_API_UPSERT, headers=TT_HEADERS, data=json.dumps(tt_record))
+            print('Holiday (PTM-3) detected.')
+            tt_record = TT_HOLIDAY_TEMPLATE.copy()
+            tt_record['date'] = record['started']
+            tt_record['hours'] = record['timeSpentSeconds']/3600
+            tt_record['comments'] = record['issue']['key']
+            date = tt_record['date'].split(' ', maxsplit=1)[0]
+        response = requests.put(TT_API_UPSERT, headers=TT_HEADERS,
+            data=json.dumps(tt_record), timeout=60)
         if response.status_code == HTTPStatus.OK:
             print(f"{date} - {tt_record['hours']}hrs record for ticket "
                   f"{tt_record['comments']} created successfully.")
