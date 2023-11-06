@@ -66,6 +66,8 @@ def get_tempo_records() -> Dict:
         sys.exit(1)
     elif response.status_code == HTTPStatus.OK:
         tempo_entries = response.json()
+    else:
+        print(response.content)
     print(f'Number of tempo records found: {len(tempo_entries)}')
     return tempo_entries
 
@@ -73,24 +75,18 @@ def create_tt_records(sxm_tempo_records : List):
     """ Migrate SXM Tempo records to BDev new TT """
     for record in sxm_tempo_records:
         tt_record = TT_DATA_TEMPLATE.copy()
+        if record['issue']['key'] == 'TEMPO-1': #PTO/Holiday
+            isholiday = record['comment'].lower().strip() == 'holiday'
+            if isholiday:
+                print(f'TEMPO-1 on {date} is a holiday.')
+                tt_record = TT_HOLIDAY_TEMPLATE.copy()
+            else:
+                tt_record = TT_PTO_TEMPLATE.copy()
         tt_record['date'] = record['started']
         tt_record['hours'] = record['timeSpentSeconds']/3600
         tt_record['comments'] = record['issue']['key']
         date = tt_record['date'].split(' ')[0]
-        if record['issue']['key'] == 'PTM-3' or record['issue']['key'] == 'TEMPO-3': #Holiday
-            print('Holiday (PTM/TEMPO-3) detected.')
-            tt_record = TT_HOLIDAY_TEMPLATE.copy()
-            tt_record['date'] = record['started']
-            tt_record['hours'] = record['timeSpentSeconds']/3600
-            tt_record['comments'] = record['issue']['key']
-            date = tt_record['date'].split(' ', maxsplit=1)[0]
-        if record['issue']['key'] == 'TEMPO-1': #PTO
-            print('PTO (TEMPO-1) detected.')
-            tt_record = TT_PTO_TEMPLATE.copy()
-            tt_record['date'] = record['started']
-            tt_record['hours'] = record['timeSpentSeconds']/3600
-            tt_record['comments'] = record['issue']['key']
-            date = tt_record['date'].split(' ', maxsplit=1)[0]
+        #print(tt_record)
         response = requests.put(TT_API_UPSERT, headers=TT_HEADERS,
             data=json.dumps(tt_record), timeout=60)
         if response.status_code == HTTPStatus.OK:
